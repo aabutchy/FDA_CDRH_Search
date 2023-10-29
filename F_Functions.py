@@ -1,10 +1,48 @@
+import re
 import sys
 import requests
 from PyPDF2 import PdfReader 
 from bs4 import BeautifulSoup
 
 
-def user_input_choose_from_list(options):
+def find_substring_in_string(substring, string):
+    found = False
+    snippets = []
+    search_able = " ".join(string.split())
+    index = [m.start() for m in re.finditer(substring.lower(), search_able.lower())]
+
+    if index == []: 
+        snippets.append(search_able)
+    else: 
+        found = True
+        index = [0] + index + [len(string)]
+        for ind in range(0,len(index)-1):
+            snippets.append(search_able[index[ind]:index[ind+1]])
+    
+    return found, snippets
+
+def clean_IFU(string,find_substring,replace_substring):
+    cleaner = re.compile(re.escape(find_substring), re.IGNORECASE)
+    clean = cleaner.sub(replace_substring, string)
+    return clean
+
+def clean_end(string):
+    if string[-1] != ".": 
+        string = string[0:-1]
+        string = clean_end(string)
+    
+    return string
+
+def clean_start(string):
+    if string[0] == " ": 
+        string = string[1:]
+        string = clean_start(string)
+    
+    return string
+
+
+
+def DEFUNCT_user_input_choose_from_list(options):
     number = 0
     for option in options:
         print(str(number) + " : " + option)
@@ -15,7 +53,7 @@ def user_input_choose_from_list(options):
     return user_choice
 
 
-def text_search(text_to_search,search_term):
+def DEFUNCT_text_search(text_to_search,search_term):
     search_able = " ".join(text_to_search.split())
 
     start = 0
@@ -25,11 +63,12 @@ def text_search(text_to_search,search_term):
 
     while start < end:
         first = search_able.find(search_term)
-        if first == -1: start = end
+        if first == -1: break
         else: 
             snippets.append(search_able[start+len(search_term)-1:first])
             search_able = search_able[first+1:]
-
+    
+    snippets.append(search_able)
     return snippets
 
 
@@ -109,3 +148,4 @@ def DEFUNCT_get_510k_IFU(Summary):
         Summary['IFU'] = text_search(selected_section,"Type of Use")[0]
 
     return Summary
+
