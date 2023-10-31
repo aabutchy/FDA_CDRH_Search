@@ -1,3 +1,4 @@
+import re
 import sys
 import requests
 from PyPDF2 import PdfReader 
@@ -27,12 +28,44 @@ class SUBMISSION:
         except Exception as e:
             if not silent: print(e)
             return False
+        
+    def find_potential_predicates(self,filename):
+        # creating a pdf reader object 
+        reader = PdfReader(filename) 
+                        
+        # extracting text from page 
+        page = reader.pages[1]
+        text = page.extract_text() 
+
+        if text == "":
+            self.Potential_510k_Predicates = ['NA']
+            self.Potential_De_Novo_Predicates = ['NA']
+            self.Potential_Predicates = "Cannot Read PDF."
+
+        else:
+            all_text = ""
+            for page in reader.pages:
+                text = page.extract_text()
+                all_text = all_text + text
+
+            found_510ks = re.findall('[K,k]\d{6}',all_text)
+            found_De_Novos = re.findall('[D,d][E,e][N,n]\d{6}',all_text)
+
+            found_510ks = list(set(found_510ks))
+            found_De_Novos = list(set(found_De_Novos))
+            if self.Submission_Number in found_510ks: found_510ks.remove(self.Submission_Number)
+            if self.Submission_Number in found_De_Novos: found_De_Novos.remove(self.Submission_Number)
+
+            self.Potential_510k_Predicates = found_510ks
+            self.Potential_De_Novo_Predicates = found_De_Novos
+            self.Potential_Predicates = found_510ks + found_De_Novos
 
 
 class SUBMISSION_510K(SUBMISSION):
     def __init__(self, number):
         SUBMISSION.__init__(self, number)
         self.Submission_Type = "510K"
+        if not re.match('[K,k]\d{6}', number): print("This does not look like a 510k Submission number!")
 
     def get_510k_summary(self):
         self.URL = 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm?ID=' + self.Submission_Number
@@ -100,12 +133,13 @@ class SUBMISSION_510K(SUBMISSION):
                         self.IFU = temp3
             else: 
                 self.IFU = "Not Automatically Found."
-            
+    
 
 class SUBMISSION_DE_NOVO(SUBMISSION):
     def __init__(self, number):
         SUBMISSION.__init__(self, number)
         self.Submission_Type = "De Novo 510(k)"
+        if not re.match('[D,d][E,e][N,n]\d{6}', number): print("This does not look like a De Novo Submission number!")
 
     def get_De_Novo_summary(self):
         self.URL = 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/denovo.cfm?id=' + self.Submission_Number

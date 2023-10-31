@@ -163,3 +163,4 @@ cython_debug/
 .env
 .env/
 output_folder/*
+FDA_database_files/*
