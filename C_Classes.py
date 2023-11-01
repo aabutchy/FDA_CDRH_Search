@@ -4,7 +4,7 @@ import requests
 from PyPDF2 import PdfReader 
 from bs4 import BeautifulSoup
 
-from F_Functions import find_substring_in_string, clean_IFU, clean_end, clean_start
+from F_Functions import find_substring_in_string, clean_IFU, clean_end, clean_start, find_link
 
 class SUBMISSION:
     def __init__(self, number):
@@ -19,7 +19,7 @@ class SUBMISSION:
         response = requests.get(link)
         
         try:
-            pdf = open(output_folder+str(pdf_type)+"_"+str(self.Submission_Number)+".pdf", 'wb')
+            pdf = open(output_folder+str(self.Submission_Number)+"_"+str(pdf_type)+".pdf", 'wb')
             pdf.write(response.content)
             pdf.close()
             if not silent: print("File downloaded")
@@ -81,21 +81,28 @@ class SUBMISSION_510K(SUBMISSION):
                 header = row.find("th")
                 data = row.find('td')
                 if header.text == "510(k) Number": pass
-                else: self.__setattr__(header.text.replace(" ","_"),data.text.strip().replace("\n","").replace("\r","").replace('\xa0',"").replace('\t',""))
-                if header.text == 'Summary': 
-                    link = row.find("a")
-                    self.Summary_URL = link.get("href")
+                else:
+                    try:
+                        self.__setattr__(header.text.replace(" ","_"),data.text.strip().replace("\n","").replace("\r","").replace('\xa0',"").replace('\t',""))
+                        found, url = find_link(row,header)
+                        if found: 
+                            if url[0] == "/": url = 'https://www.accessdata.fda.gov' + url
+                            self.__setattr__(str(header.text.replace(" ","_"))+"_URL",url)
+                    except Exception as e:
+                        # print('ERROR ')
+                        # print(e)
+                        continue
             except Exception as e:
                 # print(e)
                 continue                
-    
+           
     def get_510k_pdf(self,output_folder='./output_folder/',silent=True):
-        success = self.get_pdf("510k_Summary",self.Summary_URL,output_folder=output_folder,silent=silent)
+        success = self.get_pdf("Summary",self.Summary_URL,output_folder=output_folder,silent=silent)
 
         if success:
             self.PDF_Downloaded = "Yes"
             self.PDF_Readable = "Unknown"
-            self.PDF_Location = output_folder+'510k_Summary_'+str(self.Submission_Number)+".pdf"
+            self.PDF_Location = output_folder+str(self.Submission_Number)+"_Summary.pdf"
         else:
             self.PDF_Downloaded = "No"
             self.PDF_Readable = "Unknown"
@@ -154,37 +161,39 @@ class SUBMISSION_DE_NOVO(SUBMISSION):
             try:
                 header = row.find("th")
                 data = row.find('td')
-                self.__setattr__(header.text.replace(" ","_"),data.text.strip().replace("\n","").replace("\r","").replace('\xa0',"").replace('\t',""))
-                if header.text == 'Reclassification Order': 
-                    link = row.find("a")
-                    self.Reclassification_Order_URL = link.get("href")
-                elif header.text == 'FDA Review': 
-                    link = row.find("a")
-                    self.FDA_Review_URL = link.get("href")
-
+                try:
+                    self.__setattr__(header.text.replace(" ","_"),data.text.strip().replace("\n","").replace("\r","").replace('\xa0',"").replace('\t',""))
+                    found, url = find_link(row,header)
+                    if found: 
+                        if url[0] == "/": url = 'https://www.accessdata.fda.gov' + url
+                        self.__setattr__(str(header.text.replace(" ","_"))+"_URL",url)
+                except Exception as e:
+                    # print('ERROR ')
+                    # print(e)
+                    continue
             except Exception as e:
                 # print(e)
-                continue                               
-    
+                continue                
+
     def get_Reclassification_pdf(self,output_folder='./output_folder/',silent=True):
-        success = self.get_pdf("De_Novo_Reclassification",self.Reclassification_Order_URL,output_folder=output_folder,silent=silent)
+        success = self.get_pdf("Reclassification",self.Reclassification_Order_URL,output_folder=output_folder,silent=silent)
 
         if success:
             self.PDF_Reclassification_Downloaded = "Yes"
             self.PDF_Reclassification_Readable = "Unknown"
-            self.PDF_Reclassification_Location = output_folder+'De_Novo_Reclassification_'+str(self.Submission_Number)+".pdf"
+            self.PDF_Reclassification_Location = output_folder+str(self.Submission_Number)+"_Reclassification.pdf"
         else:
             self.PDF_Reclassification_Downloaded = "No"
             self.PDF_Reclassification_Readable = "Unknown"
             self.PDF_Reclassification_Location = "NA"
 
     def get_FDA_Review_pdf(self,output_folder='./output_folder/',silent=True):
-        success = self.get_pdf("De_Novo_Review",self.FDA_Review_URL,output_folder=output_folder,silent=silent)
+        success = self.get_pdf("Review",self.FDA_Review_URL,output_folder=output_folder,silent=silent)
 
         if success:
             self.PDF_Review_Downloaded = "Yes"
             self.PDF_Review_Readable = "Unknown"
-            self.PDF_Review_Location = output_folder+'De_Novo_Review_'+str(self.Submission_Number)+".pdf"
+            self.PDF_Review_Location = output_folder+str(self.Submission_Number)+"_Review.pdf"
         else:
             self.PDF_Review_Downloaded = "No"
             self.PDF_Review_Readable = "Unknown"
@@ -223,10 +232,86 @@ class SUBMISSION_DE_NOVO(SUBMISSION):
             else: 
                 self.IFU = "Not Automatically Found."
 
-            # found_snippets = text_search(all_text,"INDICATIONS FOR USE")
-            # best_snippet = user_input_choose_from_list(found_snippets)
-            # selected_section = found_snippets[int(best_snippet)]
-            # if selected_section[0:18].lower() == "ndications for use":selected_section = selected_section[16:]
-            # print(selected_section)
-            # print(text_search(selected_section,"IMITATIONS"))
-            # self.IFU = text_search(selected_section,"IMITATIONS")[0]            
+
+class SUBMISSION_PMA(SUBMISSION):
+    def __init__(self, number):
+        SUBMISSION.__init__(self, number)
+        self.Submission_Type = "PMA"
+        if not re.match('[P,p]\d{6}', number): print("This does not look like a PMA Submission number!")
+
+    def get_PMA_summary(self):
+        self.URL = 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpma/pma.cfm?id=' + self.Submission_Number
+        page = requests.get(self.URL)
+
+        soup = BeautifulSoup(page.content, "html.parser")
+        tables = soup.find_all('table')
+        #looks like the 7th table is the one I want
+        rows = tables[7].find_all('tr')
+
+        for row in rows[1:]:
+            if 'Approval Order Statement' in row.text:
+                temp = str(row)
+                starter = temp.find('<br/>')
+                description = temp[starter+5:]
+                description = clean_end(description)
+                self.Approval_Order_Statement = description
+            try:
+                header = row.find("th")
+                data = row.find('td')
+                if not header.text == "Supplements:":
+                    try:
+                        self.__setattr__(header.text.replace(" ","_"),data.text.strip().replace("\n","").replace("\r","").replace('\xa0',"").replace('\t',""))
+                        found, url = find_link(row,header)
+                        if found: 
+                            if url[0] == "/": url = 'https://www.accessdata.fda.gov' + url
+                            self.__setattr__(str(header.text.replace(" ","_"))+"_URL",url)
+                    except Exception as e:
+                        # print('ERROR ')
+                        # print(e)
+                        continue
+            except Exception as e:
+                # print(e)
+                continue                
+
+    def get_FDA_Approval_Order_pdf(self,output_folder='./output_folder/',silent=True):
+        success = self.get_pdf("Approval_Order",self.Approval_Order_URL,output_folder=output_folder,silent=silent)
+
+        if success:
+            self.PDF_Review_Downloaded = "Yes"
+            self.PDF_Review_Readable = "Unknown"
+            self.PDF_Review_Location = output_folder+str(self.Submission_Number)+"_Approval_Order.pdf"
+        else:
+            self.PDF_Review_Downloaded = "No"
+            self.PDF_Review_Readable = "Unknown"
+            self.PDF_Review_Location = "NA"
+
+    def get_FDA_Summary_pdf(self,output_folder='./output_folder/',silent=True):
+        success = self.get_pdf("Summary",self.Summary_URL,output_folder=output_folder,silent=silent)
+
+        if success:
+            self.PDF_Review_Downloaded = "Yes"
+            self.PDF_Review_Readable = "Unknown"
+            self.PDF_Review_Location = output_folder+str(self.Submission_Number)+"_Summary.pdf"
+        else:
+            self.PDF_Review_Downloaded = "No"
+            self.PDF_Review_Readable = "Unknown"
+            self.PDF_Review_Location = "NA"
+
+    def get_FDA_Labeling_pdf(self,output_folder='./output_folder/',silent=True):
+        success = self.get_pdf("Labeling",self.Labeling_URL,output_folder=output_folder,silent=silent)
+
+        if success:
+            self.PDF_Review_Downloaded = "Yes"
+            self.PDF_Review_Readable = "Unknown"
+            self.PDF_Review_Location = output_folder+str(self.Submission_Number)+"_Labeling.pdf"
+        else:
+            self.PDF_Review_Downloaded = "No"
+            self.PDF_Review_Readable = "Unknown"
+            self.PDF_Review_Location = "NA"
+
+
+# Approval_Order_URL: https://www.accessdata.fda.gov/cdrh_docs/pdf22/P220005A.pdf 
+# Summary: Summary of Safety and Effectiveness 
+# Summary_URL: https://www.accessdata.fda.gov/cdrh_docs/pdf22/P220005B.pdf 
+# Labeling: Labeling 
+# Labeling_URL: https://www.accessdata.fda.gov/cdrh_docs/pdf22/P220005C.pdf 

@@ -1,8 +1,12 @@
 import re
 import sys
 import requests
+import numpy as np
+import pandas as pd
+import requests, zipfile, io
 from PyPDF2 import PdfReader 
 from bs4 import BeautifulSoup
+
 
 
 def find_substring_in_string(substring, string):
@@ -40,7 +44,27 @@ def clean_start(string):
     
     return string
 
+def find_link(row,header):
+    try:
+        link = row.find("a")
+        url = link.get("href")
+        return True, url
 
+    except Exception as e:
+        return False, None
+
+def download_FDA_file(file):
+    URL = 'https://www.accessdata.fda.gov/premarket/ftparea/' + file + '.zip'
+    file = './FDA_database_files/' + file + '.txt' 
+    r = requests.get(URL)
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    z.extractall("./FDA_database_files/")
+    return file
+
+def create_FDA_dataframe(file):
+    return pd.read_csv(file, sep='|', index_col=False, encoding='cp1252')
+    
+    
 
 def DEFUNCT_user_input_choose_from_list(options):
     number = 0

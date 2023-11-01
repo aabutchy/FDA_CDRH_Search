@@ -2,9 +2,9 @@
 
 ## _For finding, scraping, and manipulating FDA cleared devices via device submission numbers._
 
-This repository is a broad programmatic manner to automatically pull FDA 510(k) and De Novo summaries from the FDA's database for easily parsing/manipulating the data therein.
+This repository is an assembly of tools to automatically pull FDA 510(k), De Novo, and PMA summaries from the FDA's website for easier parsing and manipulating the data therein.
 
-In this repository, there are classes for easy scraping FDA 510ks and De Novo devices based only on a Submission Number (eg "K000000" or "DEN000000"). In addition, there are helful functions for downloading the full list of FDA 510(k) devices as databased by the FDA and updated on a monthly basis. Combined, these two options allow a user to conduct rudimentary FDA predicate device searches in a near-automatic fashion. Below, I walk through a small tutorial on how to employ this repo to conduct pointed predicate-device searches.
+In this repository, there are classes for easy scraping FDA 510ks, De Novo, and PMA devices based only on a Submission Number (eg "K000000", "DEN000000", or "P000000"). In addition, there are helful functions for downloading the full list of FDA 510(k) devices as databased by the FDA and updated on a monthly basis. Combined, these two options allow a user to conduct rudimentary FDA predicate device searches in a near-automatic fashion. Below, I walk through a small tutorial on how to employ this repo to conduct pointed predicate-device searches.
 
 ## FDA Database Resources
 
@@ -19,9 +19,9 @@ In writing this repository, it is apparent that one could use this code to quere
 ## Useful FDA Resources
 
 - [List of FDA Databases](https://www.fda.gov/medical-devices/products-and-medical-procedures/device-approvals-denials-and-clearances)
+- [FDA Table of FDA Databases](https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance/medical-device-databases)
+- [FDA Searchable PMA Database](https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfPMA/pma.cfm)
 - [FDA Searchable 510k Database](https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm)
 - [FDA Searchable De Novo Database](https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfPMN/denovo.cfm)
-- [FDA Searchable PMA Database](https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfPMA/pma.cfm)
-- [FDA Downloadable 510k Database (updated monthly)](https://www.fda.gov/medical-devices/510k-clearances/downloadable-510k-files)
-- [FDA Database of FDA Databases](https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance/medical-device-databases)
 - [FDA Recently Approved Devices and Database](https://www.fda.gov/medical-devices/device-approvals-denials-and-clearances/recently-approved-devices)
+- [FDA Downloadable 510k Database (updated monthly)](https://www.fda.gov/medical-devices/510k-clearances/downloadable-510k-files)
